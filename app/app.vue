@@ -105,7 +105,7 @@
         <div class="void-content">
           <div class="void-tunnel" v-for="i in 12" :key="i" :style="{ '--i': i }"></div>
           <div class="void-particles">
-            <div v-for="i in 50" :key="i" class="particle" :style="{ particleStyle(i) }"></div>
+            <div v-for="i in 50" :key="i" class="particle" :style="particleStyle(i)"></div>
           </div>
           <div class="void-text">
             <h2 class="void-message">{{ voidMessage }}</h2>
