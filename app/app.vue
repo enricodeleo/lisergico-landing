@@ -37,11 +37,11 @@
         </div>
 
         <div class="cta-group">
-          <button class="dream-btn primary">
+          <button class="dream-btn primary" @click="enterTheVoid">
             <span class="btn-text">Enter the Void</span>
             <span class="btn-glow"></span>
           </button>
-          <button class="dream-btn secondary">
+          <button class="dream-btn secondary" @click="summonDreams">
             <span class="btn-text">Summon Your Dreams</span>
           </button>
         </div>
@@ -99,6 +99,117 @@
       </footer>
     </main>
 
+    <!-- Void Overlay -->
+    <Transition name="void">
+      <div v-if="voidActive" class="void-overlay" @click="exitVoid">
+        <div class="void-content">
+          <div class="void-tunnel" v-for="i in 12" :key="i" :style="{ '--i': i }"></div>
+          <div class="void-particles">
+            <div v-for="i in 50" :key="i" class="particle" :style="{ particleStyle(i) }"></div>
+          </div>
+          <div class="void-text">
+            <h2 class="void-message">{{ voidMessage }}</h2>
+          </div>
+        </div>
+        <button class="void-close" @click="exitVoid">
+          <span>return to reality</span>
+        </button>
+      </div>
+    </Transition>
+
+    <!-- Dream Summon Modal -->
+    <Transition name="modal">
+      <div v-if="dreamModalOpen" class="dream-modal-overlay" @click.self="closeDreamModal">
+        <div class="dream-modal">
+          <button class="modal-close" @click="closeDreamModal">×</button>
+
+          <!-- Dream idea display -->
+          <div v-if="!showForm" class="dream-idea-container">
+            <div class="dream-icon">◈</div>
+            <h3 class="dream-idea-title">The Void Whispered:</h3>
+            <div class="dream-idea-card">
+              <h4 class="idea-name">{{ currentDream.name }}</h4>
+              <p class="idea-tagline">{{ currentDream.tagline }}</p>
+              <p class="idea-description">{{ currentDream.description }}</p>
+              <div class="idea-tags">
+                <span v-for="tag in currentDream.tags" :key="tag" class="tag">{{ tag }}</span>
+              </div>
+            </div>
+            <p class="dream-prompt">What's your dream?</p>
+            <button class="dream-btn primary" @click="showForm = true">
+              <span class="btn-text">Tell Us Your Vision</span>
+            </button>
+            <button class="dream-again-btn" @click="getRandomDream">
+              <span>Summon Another</span>
+            </button>
+          </div>
+
+          <!-- Lead gen form -->
+          <div v-else class="dream-form-container">
+            <h3 class="form-title">Plant Your Dream Seed</h3>
+            <p class="form-subtitle">The collective consciousness is listening</p>
+
+            <form @submit.prevent="submitDream" class="dream-form">
+              <div class="form-group">
+                <label for="name">Your Name</label>
+                <input
+                  id="name"
+                  v-model="form.name"
+                  type="text"
+                  placeholder="Who are you, dreamer?"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input
+                  id="email"
+                  v-model="form.email"
+                  type="email"
+                  placeholder="Where should we reach you?"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Phone</label>
+                <input
+                  id="phone"
+                  v-model="form.phone"
+                  type="tel"
+                  placeholder="For urgent transcendence"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="description">Your Dream</label>
+                <textarea
+                  id="description"
+                  v-model="form.description"
+                  placeholder="Describe your vision... What keeps you awake at night?"
+                  rows="4"
+                  required
+                ></textarea>
+              </div>
+
+              <div v-if="formStatus.message" :class="['form-status', formStatus.type]">
+                {{ formStatus.message }}
+              </div>
+
+              <button type="submit" class="dream-btn primary full-width" :disabled="formStatus.loading">
+                <span class="btn-text">{{ formStatus.loading ? 'Transmitting...' : 'Release Into the Void' }}</span>
+              </button>
+            </form>
+
+            <button class="back-to-idea" @click="showForm = false">
+              ← Back to the dream
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
     <!-- Grain overlay -->
     <div class="grain-overlay"></div>
 
@@ -135,6 +246,196 @@ const realms = [
   { name: 'Dream Embassy', desc: 'Diplomatic relations between your sleeping and waking selves are negotiated here' },
   { name: 'The Edge', desc: 'Standing at the boundary of understanding, looking into the beautiful void of not-knowing' }
 ]
+
+const startupDreams = [
+  {
+    name: 'NeuroBloom',
+    tagline: 'AI-powered emotional gardens that grow from your thoughts',
+    description: 'Imagine a digital sanctuary where your emotions become living flora. Using EEG headsets and biometric feedback, NeuroBloom visualizes your mental state as a thriving ecosystem. Anxious thoughts become resilient bamboo, joy manifests as cherry blossoms. Share your garden with others or keep it as a private meditation space.'
+  },
+  {
+    name: 'TimeSwap',
+    tagline: 'Peer-to-peer marketplace for trading life hours',
+    description: 'A revolutionary platform where people exchange skills and services measured in time, not money. A retired carpenter in Osaka teaches woodworking to a Silicon Valley coder for 3 hours. In exchange, the coder debugs the carpenter\'s grandson\'s startup for 3 hours. No currency. Just pure human time, valued equally.'
+  },
+  {
+    name: 'DreamWeaver VR',
+    tagline: 'Shared lucid dreaming spaces for collaborative creativity',
+    description: 'Sleep-based collaboration platform. Teams enter synchronized REM states where they can brainstorm, prototype, and create in a world limited only by imagination. Our patent-pending neural synchronization technology enables shared dreamscapes where the laws of physics are merely suggestions.'
+  },
+  {
+    name: 'Mothbox',
+    tagline: 'Social network that deletes everything after 24 hours',
+    description: 'Anti-archival social media designed for authentic connection. Every post, message, and memory fragment permanently dissolves at sunrise. No history. No permanent record. Just ephemeral moments meant to be experienced, not collected. Be your true self when nothing lasts.'
+  },
+  {
+    name: 'Symbiont',
+    tagline: 'Wearable AI that learns to predict your needs before you conscious of them',
+    description: 'A thin biosensor patch that learns your patterns so deeply it can act as your external consciousness. It orders groceries before you realize you\'re out. It suggests routes based on your mood, not just traffic. It\'s not an assistant—it\'s an extension of you, powered by swarm intelligence algorithms.'
+  },
+  {
+    name: 'EchoLocation',
+    tagline: 'AR audio tours narrated by people who loved these places',
+    description: 'Augmented reality app where you hear the emotional history of spaces through recordings left by those who experienced them there. A bench where someone got engaged. A corner where a musician found inspiration. The world becomes a tapestry of human emotion, layered invisibly over physical reality.'
+  },
+  {
+    name: 'Pulse',
+    tagline: 'Dating app using only biosignals—no profiles, no photos, no chat',
+    description: 'Match based on physiological compatibility. Wearables measure your response to curated experiences—music, art, stories. When two people\'s patterns synchronize, they\'re notified. No swiping, no carefully curated personas. Just bodies that resonate on the same frequency.'
+  },
+  {
+    name: 'Museum of Lost Futures',
+    tagline: 'VR experiences of futures that almost happened but didn\'t',
+    description: 'An immersive journey through alternate timelines. The 1990s where the Soviet Union transitioned to democracy. The world where electric cars won in 1900. The timeline where we solved climate change in the 1980s. History museums show what was. We show what could have been.'
+  },
+  {
+    name: 'SynthSkin',
+    tagline: ' programmable smart tattoos that change with your mood',
+    description: 'E-ink tattoos embedded in a thin second skin. Display your current mood, show notifications, or display art that evolves throughout the day. Fully programmable via app, completely reversible, and surprisingly beautiful. Your body as a canvas for living art.'
+  },
+  {
+    name: 'Quiet',
+    tagline: 'Silence-as-a-service: physical spaces guaranteed free of all electromagnetic signals',
+    description: 'A network of faraday-shielded sanctuaries in every major city. Membership grants access to spaces completely free of Wi-Fi, cellular, and all electromagnetic radiation. The first luxury amenity of the 21st century isn\'t gold—it\'s genuine, complete disconnection from the digital world.'
+  },
+  {
+    name: 'AncestorAI',
+    tagline: 'Chat with your deceased relatives, trained on their voice and memories',
+    description: 'Using voice recordings, messages, and photos, we create gentle AI approximations of lost loved ones. Not a replacement, but a bridge. Ask the questions you never got to ask. Hear familiar laughter one more time. Grief meets technology in a space of healing.'
+  },
+  {
+    name: 'FoodPrint',
+    tagline: 'Trace every ingredient back to the specific farm and farmer',
+    description: 'Scan any meal and see the complete journey of every ingredient. The tomato in your salsa was grown by Maria\'s farm in California. The salt came from these specific ponds in Portugal. Connect with the humans who feed you. Know the story behind every bite.'
+  }
+]
+
+// Void overlay state
+const voidActive = ref(false)
+const voidMessage = ref('ENTERING THE VOID...')
+const voidMessages = [
+  'ENTERING THE VOID...',
+  'REALITY DISSOLVING...',
+  'CONSCIOUSNESS EXPANDING...',
+  'INFINITE POSSIBILITIES...',
+  'YOU ARE THE UNIVERSE...',
+  'THE UNIVERSE IS YOU...',
+]
+
+// Dream modal state
+const dreamModalOpen = ref(false)
+const currentDream = ref({})
+const showForm = ref(false)
+
+// Form state
+const form = ref({
+  name: '',
+  email: '',
+  phone: '',
+  description: ''
+})
+
+const formStatus = ref({
+  loading: false,
+  message: '',
+  type: ''
+})
+
+// Void functions
+function enterTheVoid() {
+  voidActive.value = true
+  let i = 0
+  const interval = setInterval(() => {
+    i = (i + 1) % voidMessages.length
+    voidMessage.value = voidMessages[i]
+  }, 2000)
+
+  // Store interval ID for cleanup
+  voidMessage.value._interval = interval
+}
+
+function exitVoid() {
+  voidActive.value = true
+  voidMessage.value = 'RETURNING...'
+  clearInterval(voidMessage.value._interval)
+
+  setTimeout(() => {
+    voidActive.value = false
+  }, 500)
+}
+
+// Dream modal functions
+function summonDreams() {
+  getRandomDream()
+  showForm.value = false
+  dreamModalOpen.value = true
+}
+
+function getRandomDream() {
+  currentDream.value = startupDreams[Math.floor(Math.random() * startupDreams.length)]
+}
+
+function closeDreamModal() {
+  dreamModalOpen.value = false
+  showForm.value = false
+  formStatus.value = { loading: false, message: '', type: '' }
+}
+
+// Form submission
+async function submitDream() {
+  formStatus.value = { loading: true, message: '', type: '' }
+
+  try {
+    const response = await fetch('https://n8n.enricodeleo.com/webhook/lisergico-home', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: form.value.name,
+        email: form.value.email,
+        phone: form.value.phone,
+        description: form.value.description,
+        inspired_by: currentDream.value.name
+      })
+    })
+
+    if (response.ok) {
+      formStatus.value = {
+        loading: false,
+        message: '✧ Your dream has been released into the void. The collective consciousness will respond. ✧',
+        type: 'success'
+      }
+      // Reset form after delay
+      setTimeout(() => {
+        form.value = { name: '', email: '', phone: '', description: '' }
+        formStatus.value = { loading: false, message: '', type: '' }
+        closeDreamModal()
+      }, 3000)
+    } else {
+      throw new Error('Transmission failed')
+    }
+  } catch (error) {
+    formStatus.value = {
+      loading: false,
+      message: 'The void is temporarily disturbed. Try again.',
+      type: 'error'
+    }
+  }
+}
+
+// Particle style generator for void
+function particleStyle(i) {
+  return {
+    '--x': Math.random() * 100,
+    '--y': Math.random() * 100,
+    '--delay': Math.random() * 2,
+    '--size': Math.random() * 4 + 2
+  }
+}
+
+// Initialize with a random dream
+getRandomDream()
 </script>
 
 <style>
@@ -527,6 +828,15 @@ const realms = [
     inset 0 0 30px rgba(0, 255, 255, 0.2);
 }
 
+.dream-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dream-btn.full-width {
+  width: 100%;
+}
+
 .btn-text {
   position: relative;
   z-index: 1;
@@ -816,6 +1126,426 @@ const realms = [
   }
 }
 
+/* Void Overlay */
+.void-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.void-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.void-tunnel {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid;
+  animation: void-tunnel-spin 4s linear infinite;
+  opacity: 0.5;
+}
+
+.void-tunnel:nth-child(1) { border-color: var(--electric-pink); animation-duration: 8s; }
+.void-tunnel:nth-child(2) { border-color: var(--cyan-dream); animation-duration: 10s; animation-direction: reverse; }
+.void-tunnel:nth-child(3) { border-color: var(--acid-green); animation-duration: 12s; }
+.void-tunnel:nth-child(4) { border-color: var(--neon-purple); animation-duration: 6s; animation-direction: reverse; }
+.void-tunnel:nth-child(5) { border-color: var(--sunset-orange); animation-duration: 9s; }
+.void-tunnel:nth-child(6) { border-color: var(--plasma-yellow); animation-duration: 11s; animation-direction: reverse; }
+
+@keyframes void-tunnel-spin {
+  from { transform: rotate(0deg) scale(calc(1 - var(--i) * 0.05)); }
+  to { transform: rotate(360deg) scale(calc(1 - var(--i) * 0.05)); }
+}
+
+.void-particles {
+  position: absolute;
+  inset: 0;
+}
+
+.particle {
+  position: absolute;
+  width: calc(var(--size) * 1px);
+  height: calc(var(--size) * 1px);
+  background: white;
+  border-radius: 50%;
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  animation: particle-fly 3s ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes particle-fly {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(calc((var(--x) - 50) * 5px), calc((var(--y) - 50) * 5px)) scale(2);
+    opacity: 1;
+  }
+}
+
+.void-text {
+  z-index: 1;
+  text-align: center;
+}
+
+.void-message {
+  font-family: 'Abril Fatface', cursive;
+  font-size: clamp(2rem, 8vw, 6rem);
+  color: #fff;
+  text-shadow:
+    0 0 20px var(--electric-pink),
+    0 0 40px var(--cyan-dream),
+    0 0 60px var(--acid-green);
+  animation: void-pulse 1s ease-in-out infinite;
+}
+
+@keyframes void-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: scale(1.05);
+    filter: hue-rotate(30deg);
+  }
+}
+
+.void-close {
+  position: absolute;
+  bottom: 3rem;
+  padding: 1rem 2rem;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.void-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #fff;
+}
+
+/* Void transition */
+.void-enter-active,
+.void-leave-active {
+  transition: all 0.5s ease;
+}
+
+.void-enter-from,
+.void-leave-to {
+  opacity: 0;
+}
+
+.void-enter-from .void-tunnel,
+.void-leave-to .void-tunnel {
+  transform: scale(0);
+}
+
+/* Dream Modal */
+.dream-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 0, 26, 0.9);
+  backdrop-filter: blur(20px);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.dream-modal {
+  position: relative;
+  max-width: 600px;
+  width: 100%;
+  background: rgba(20, 0, 40, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  padding: 3rem 2rem;
+  animation: modal-emerge 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes modal-emerge {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* Dream Idea Display */
+.dream-idea-container {
+  text-align: center;
+}
+
+.dream-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: icon-pulse 3s ease-in-out infinite;
+}
+
+.dream-idea-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 1.5rem;
+}
+
+.dream-idea-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.dream-idea-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    var(--neon-purple), var(--electric-pink),
+    var(--cyan-dream), var(--acid-green));
+  background-size: 300% 100%;
+  animation: gradient-flow 4s ease infinite;
+}
+
+.idea-name {
+  font-family: 'Abril Fatface', cursive;
+  font-size: 2rem;
+  background: linear-gradient(135deg, var(--electric-pink), var(--cyan-dream));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.idea-tagline {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1rem;
+}
+
+.idea-description {
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1rem;
+}
+
+.idea-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.tag {
+  padding: 0.3rem 0.8rem;
+  background: rgba(191, 0, 255, 0.2);
+  border: 1px solid rgba(191, 0, 255, 0.3);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: var(--cyan-dream);
+}
+
+.dream-prompt {
+  font-family: 'Abril Fatface', cursive;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+.dream-again-btn {
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dream-again-btn:hover {
+  border-color: var(--cyan-dream);
+  color: var(--cyan-dream);
+}
+
+/* Dream Form */
+.dream-form-container {
+  text-align: center;
+}
+
+.form-title {
+  font-family: 'Abril Fatface', cursive;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.form-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 2rem;
+}
+
+.dream-form {
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--cyan-dream);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-status {
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.form-status.success {
+  background: rgba(57, 255, 20, 0.1);
+  border: 1px solid rgba(57, 255, 20, 0.3);
+  color: var(--acid-green);
+}
+
+.form-status.error {
+  background: rgba(255, 0, 255, 0.1);
+  border: 1px solid rgba(255, 0, 255, 0.3);
+  color: var(--electric-pink);
+}
+
+.back-to-idea {
+  margin-top: 1rem;
+  padding: 0.8rem 1.5rem;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-to-idea:hover {
+  color: var(--cyan-dream);
+}
+
+/* Modal transition */
+.modal-enter-active,
+.modal-leave-active {
+  transition: all 0.4s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .dream-modal,
+.modal-leave-to .dream-modal {
+  transform: scale(0.9) translateY(20px);
+}
+
 /* Grain overlay */
 .grain-overlay {
   position: fixed;
@@ -873,6 +1603,14 @@ const realms = [
   .dream-quote::after {
     bottom: -2rem;
     right: 0;
+  }
+
+  .dream-modal {
+    padding: 2rem 1.5rem;
+  }
+
+  .idea-name {
+    font-size: 1.5rem;
   }
 }
 
